@@ -1,4 +1,4 @@
-# 3D-Graphics-Projects
+# Graphics-Projects
 
 Hey there! Welcome to my computer graphics repository, which showcases the various computer graphics projects that I have worked on through this past Fall 2020.
 
