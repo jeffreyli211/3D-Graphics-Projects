@@ -1,0 +1,107 @@
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Name: Jeffrey Li
+ * Class: CS 480
+ * Programming assignment 2
+ * Due date: October 13, 2020
+ * Assignment objective: Develop a program that allows the user to control a simulated insect, scorpion, or spider.
+ * Requirements:
+ * 		1. Use OpenGL to construct a 3D insect, spider, or scorpion model from cylinders and/or ellipsoids.
+ * 		2. Write code that enables the user to change the angles at each joint in the creature's body model
+ * 		   via the keyboard interface that you define. Limit the angles at each joint within reasonable
+ * 		   ranges so that creature's legs, neck, head and any other parts don't intersect or bend in unnatural
+ * 		   ways! The orientation of joint rotations for the left and right limbs should mirror each other.
+ * 		3. Create 5 (five) different poses of the creature that you defined. Add a keyboard input 'T' to cycle
+ * 		   through the poses. 
+ * 
+ * Notes: This package contains the modified skeleton code of @author Jeffrey Finkelstein's 3D hand model simulation
+ * in order to create a 3D spider model, capable of spider-like joint rotations and poses.
+ */
+
+  /**
+   * A spider leg which has a body joint, an inner middle joint, and outer middle joint and an outermost tip joint.
+   * This class is a modified form of @author Jeffrey Finkelstein's Finger class.
+   */
+  public class Leg {
+    /** The list of all the joints in this leg. */
+	private final List<Component> joints;
+	/** The outermost joint of the leg. */
+	private final Component tipJoint;
+	/** The outer middle joint of the leg. */
+	private final Component outerMidJoint;
+	/** The inner middle joint of the leg. */
+	private final Component innerMidJoint;
+	/** The body joint of the leg. */
+	private final Component bodyJoint;
+
+    /**
+     * Instantiates this leg with the four specified joints.
+     * 
+     * @param bodyJoint
+     *          The body joint of this leg.
+     * @param innerMidJoint
+     *          The inner middle joint of this leg.
+     * @param outerMidJoint
+     *          The outer middle joint of this leg.
+     * @param tipjoint
+     * 			The outermost joint of this leg.
+     */
+    public Leg(final Component bodyJoint, final Component innerMidJoint,
+      final Component outerMidJoint, final Component tipJoint) {
+      this.bodyJoint = bodyJoint;
+      this.innerMidJoint = innerMidJoint;
+      this.outerMidJoint = outerMidJoint;
+      this.tipJoint = tipJoint;
+
+      this.joints = Collections.unmodifiableList(Arrays.asList(this.bodyJoint,
+    		  this.innerMidJoint, this.outerMidJoint, this.tipJoint));
+    }
+
+    /**
+     * Gets an unmodifiable view of the list of the joints of this leg.
+     * 
+     * @return An unmodifiable view of the list of the joints of this leg.
+     */
+    List<Component> joints() {
+      return this.joints;
+    }
+    
+    /**
+     * Gets the body joint of this leg.
+     * 
+     * @return The body joint of this leg.
+     */
+    Component bodyJoint() {
+        return this.bodyJoint;
+      }
+    
+    /**
+     * Gets the outermost joint of this leg.
+     * 
+     * @return The distal joint of this leg.
+     */
+    Component tipJoint() {
+      return this.tipJoint;
+    }
+
+    /**
+     * Gets the outer middle joint of this leg.
+     * 
+     * @return The outer middle joint of this leg.
+     */
+    Component outerMidJoint() {
+      return this.outerMidJoint;
+    }
+
+    /**
+     * Gets the inner middle joint of this leg.
+     * 
+     * @return The inner middle joint of this leg.
+     */
+    Component innerMidJoint() {
+        return this.innerMidJoint;
+      }
+  }

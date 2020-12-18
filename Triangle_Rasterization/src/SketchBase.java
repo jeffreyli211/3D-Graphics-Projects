@@ -1,0 +1,359 @@
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+
+public class SketchBase 
+{
+	public SketchBase()
+	{
+		// deliberately left blank
+	}
+	
+	// draw a point
+	public static void drawPoint(BufferedImage buff, Point2D p)
+	{
+		buff.setRGB(p.x, buff.getHeight()-p.y-1, p.c.getBRGUint8());
+	}
+	
+	/*
+	 * Line-drawing function that implements Bresenhams algorithm for line-drawing.
+	 */
+	public static void drawLine(BufferedImage buff, Point2D p1, Point2D p2)
+	{
+		drawPoint(buff, p1);	// BASE CASE: Draw the point p1
+		drawPoint(buff, p2);	// BASE CASE: Draw the point p2
+		
+		Point2D currPoint =  p1;
+		float[] RGB;
+		
+		boolean switched = false;
+		int x = p1.x;
+		int y = p1.y;
+		
+		int dx = Math.abs(p2.x - p1.x);
+		int dy = Math.abs(p2.y - p1.y);
+		
+		int sign_x = (int) Math.signum(p2.x - p1.x);
+		int sign_y = (int) Math.signum(p2.y - p1.y);
+		
+		// y incline is greater than x incline
+		if (dy > dx)
+		{
+			// swap dx and dy for when we are moving in the y-direction
+			int temp = dx;
+			dx = dy;
+			dy = temp;
+			switched = true;
+		}
+		
+		float error = 2 * dy - dx;
+		
+		// iterate through delta x (or delta y if y incline was greater and thus were swapped)
+		for (int i = 0; i < dx; i++)
+		{
+			RGB = getColor(x, y, p1, p2);
+			ColorType pointColor = new ColorType(RGB[0], RGB[1], RGB[2]);
+			currPoint = new Point2D(x, y, pointColor);
+			drawPoint(buff, currPoint);
+			
+			// Line proceeds in the y-direction
+			while (error >= 0)
+			{
+				// account for swapping dx and dy because dy > dx
+				if (switched)
+				{
+					// increment/decrement for next point
+					x += sign_x;
+				}
+				else
+				{
+					y += sign_y;
+				}
+				error = error - (2 * dx);
+			}
+			if (switched)
+			{
+				// increment/decrement y for next point to the corresponding x from while loop
+				y += sign_y;
+			}
+			else
+			{
+				x += sign_x;
+			}
+			error = error + (2 * dy);
+		}
+	}
+	
+	/*
+	 * Triangle-rasterization function that implements Bresenhams algorithm that iteratively forms any two edges,
+	 * and simultaneously fills the horizontal lines between the two edges using the drawLine(...) algorithm.
+	 */
+	public static void drawTriangle(BufferedImage buff, Point2D p1, Point2D p2, Point2D p3, boolean do_smooth)
+	{
+		ArrayList<Point2D> y_coords = sortBy_y(p1, p2, p3);
+		
+		// Top, middle, and bottom points according to their y-coordinates
+		Point2D top = y_coords.get(0);
+		Point2D mid = y_coords.get(1);
+		Point2D bottom = y_coords.get(2);
+		
+		// Note: Only one of these can be true, but both can be false
+		boolean isFlatBottom = checkFlatness(mid, bottom);
+		boolean isFlatTop = checkFlatness(top, mid);
+		
+		// Base cases for flat triangles
+		if (isFlatBottom)
+		{
+			fillFlatBottom(buff, top, mid, bottom, do_smooth, p1.c);
+		}
+		else if (isFlatTop)
+		{
+			fillFlatTop(buff, bottom, mid, top, do_smooth, p1.c);
+		}
+		else
+		{
+			// find x-coordinate of point that intersects top and bottom points
+			int p4_y = mid.y;
+			float t = ((float) mid.y - (float) top.y) / ((float) bottom.y - (float) top.y);
+			float float_p4_x = ((1-t) * top.x) + (t * bottom.x);
+			int p4_x = Math.round(float_p4_x);
+			
+			float[] p4_RGB = getColor(p4_x, p4_y, top, bottom);
+			ColorType p4_c = new ColorType(p4_RGB[0],p4_RGB[1],p4_RGB[2]);
+			Point2D p4 = new Point2D(p4_x, p4_y, p4_c);
+			
+			fillFlatBottom(buff, top, mid, p4, do_smooth, p1.c);
+			fillFlatTop(buff, bottom, mid, p4, do_smooth, p1.c);
+		}
+		
+	}
+	
+	// helper function that uses linear interpolation to determine the color of a point between two given points
+	public static float[] getColor(int target_x, int target_y, Point2D p1, Point2D p2)
+	{
+		// distance between p1 and target
+		float d1_inner_sqrt = (float) Math.pow(((float) target_x - (float) p1.x), 2.0) + (float) Math.pow(((float) target_y - (float) p1.y), 2.0);
+		float d1 = (float) Math.pow(d1_inner_sqrt, 0.5);
+		
+		// distance between target and p2
+		float d2_inner_sqrt = (float) Math.pow(((float) p2.x - (float) target_x), 2.0) + (float) Math.pow(((float) p2.y - (float) target_y), 2.0);
+		float d2 = (float) Math.pow(d2_inner_sqrt, 0.5);
+		
+		// linearly interpolate each color at target point
+		float retRed = (p1.c.r * (d2 / (d1 + d2))) + (p2.c.r * (d1 / (d1 + d2)));
+		float retGreen = (p1.c.g * (d2 / (d1 + d2))) + (p2.c.g * (d1 / (d1 + d2)));
+		float retBlue = (p1.c.b * (d2 / (d1 + d2))) + (p2.c.b * (d1 / (d1 + d2)));
+		
+		float[] ret = {retRed, retGreen, retBlue};
+		return ret;
+	}
+	
+	// helper function to sort the points of a triangle by their y-coordinates
+	public static ArrayList<Point2D> sortBy_y(Point2D p1, Point2D p2, Point2D p3)
+	{
+		ArrayList<Point2D> sorted = new ArrayList<Point2D>();
+		
+		if (p1.y <= p2.y && p2.y <= p3.y)		// p1 <= p2 <= p3 (for y-coordinates)
+		{
+			sorted.add(0,p1);sorted.add(1,p2);sorted.add(2,p3);
+		} else if (p1.y <= p3.y && p3.y <= p2.y)	// p1 <= p3 <= p2 (for y-coordinates)
+		{
+			sorted.add(0,p1);sorted.add(1,p3);sorted.add(2,p2);
+		}
+		else if (p2.y <= p1.y && p1.y <= p3.y)	// p2 <= p1 <= p3 (for y-coordinates)
+		{
+			sorted.add(0,p2);sorted.add(1,p1);sorted.add(2,p3);
+		}
+		else if (p2.y <= p3.y && p3.y <= p1.y)	// p2 <= p3 <= p1 (for y-coordinates)
+		{
+			sorted.add(0,p2);sorted.add(1,p3);sorted.add(2,p1);
+		}
+		else if (p3.y <= p1.y && p1.y <= p2.y)	// p3 <= p1 <= p2 (for y-coordinates)
+		{
+			sorted.add(0,p3);sorted.add(1,p1);sorted.add(2,p2);
+		}
+		else									// p3 <= p2 <= p1 (for y-coordinates)
+		{
+			sorted.add(0,p3);sorted.add(1,p2);sorted.add(2,p1);
+		}
+		return sorted;
+	}
+	
+	// helper function to check if a triangle is already a flat-top/flat-bottom
+	public static boolean checkFlatness(Point2D p1, Point2D p2)
+	{
+		if (p1.y == p2.y)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	public static void fillFlatBottom(BufferedImage buff, Point2D p1, Point2D p2, Point2D p3, boolean do_smooth, ColorType non_smooth_c)
+	{
+		// when called, p1 will always be the top vertex, p2 & p3 will be the flat bottom vertices
+		
+		// BASE CASE: Plot the point of the triangle that is not part of the flat side
+		if (do_smooth)				// smooth coloring ON, plot with its color value
+		{
+			drawPoint(buff, p1);
+		}
+		else						// smooth coloring OFF, plot with fill color
+		{
+			Point2D tip_point = new Point2D(p1.x, p1.y, non_smooth_c);
+			drawPoint(buff, tip_point);
+		}
+		
+		// for line from p1 to p2
+		Point2D currPoint0 = p1;
+		float[] RGB0;
+		ColorType pointColor0 = non_smooth_c;
+		int x0 = p1.x;
+		int y0 = p1.y;
+		int dx0 = Math.abs(p2.x - p1.x);
+		int dy0 = Math.abs(p2.y - p1.y);
+		int sign_x0 = (int) Math.signum(p2.x - p1.x);
+		int sign_y0 = (int) Math.signum(p2.y - p1.y);
+		
+		float error0 = 2 * dx0 - dy0;
+		
+		// for line from p1 to p3
+		Point2D currPoint1 = p1;
+		float[] RGB1;
+		ColorType pointColor1 = non_smooth_c;
+		int x1 = p1.x;
+		int y1 = p1.y;
+		int dx1 = Math.abs(p3.x - p1.x);
+		int dy1 = Math.abs(p3.y - p1.y);
+		int sign_x1 = (int) Math.signum(p3.x - p1.x);
+		int sign_y1 = (int) Math.signum(p3.y - p1.y);	// should be the same as sign_y0
+		
+		float error1 = 2 * dx1 - dy1;
+		
+		// iterate through each increment/decrement of y
+		// since dy will be the same for both lines, this should account for every line across the triangle
+		for (int i = 0; i < dy0; i++)
+		{
+			if (do_smooth)
+			{
+				RGB0 = getColor(x0, y0, p1, p2);
+				pointColor0 = new ColorType(RGB0[0], RGB0[1], RGB0[2]);
+				RGB1 = getColor(x1, y1, p1, p3);
+				pointColor1 = new ColorType(RGB1[0], RGB1[1], RGB1[2]);
+			}
+			
+			currPoint0 = new Point2D(x0, y0, pointColor0);
+			currPoint1 = new Point2D(x1, y1, pointColor1);
+			drawLine(buff, currPoint0, currPoint1);
+			
+			// swapping does not need to be accounted for
+			// we will always iterate in the y-direction, and continuously move the x-coordinate while error >= 0
+			// the missing points between where we started on this y position and the new x position after the while loop will be filled in with drawLine(...)
+			while (error0 >= 0)
+			{
+				x0 += sign_x0;
+				error0 = error0 - (2 * dy0);
+			}
+			y0 += sign_y0;
+			error0 = error0 + (2 * dx0);
+			
+			while (error1 >= 0)
+			{
+				x1 += sign_x1;
+				error1 = error1 - (2 * dy1);
+			}
+			y1 += sign_y1;
+			error1 = error1 + (2 * dx1);
+		}
+	}
+	
+	public static void fillFlatTop(BufferedImage buff, Point2D p1, Point2D p2, Point2D p3, boolean do_smooth, ColorType non_smooth_c)
+	{
+		// Bresenhams algorithm run for two separate lines to be drawn
+		// inputs p1 will always be the bottom vertex, p2 & p3 will be the flat top vertices
+		
+		if (do_smooth)
+		{
+			drawPoint(buff, p1);
+		}
+		else
+		{
+			Point2D tip_point = new Point2D(p1.x, p1.y, non_smooth_c);
+			drawPoint(buff, tip_point);
+		}
+		
+		// for line from p2 to p1
+		Point2D currPoint0 = p2;
+		float[] RGB0;
+		ColorType pointColor0 = non_smooth_c;
+		int x0 = p2.x;
+		int y0 = p2.y;
+		int dx0 = Math.abs(p2.x - p1.x);
+		int dy0 = Math.abs(p2.y - p1.y);
+		int sign_x0 = (int) Math.signum(p1.x - p2.x);
+		int sign_y0 = (int) Math.signum(p1.y - p2.y);
+		
+		float error0 = 2 * dx0 - dy0;
+		
+		// for line from p3 to p1
+		Point2D currPoint1 = p3;
+		float[] RGB1;
+		ColorType pointColor1 = non_smooth_c;
+		int x1 = p3.x;
+		int y1 = p3.y;
+		int dx1 = Math.abs(p3.x - p1.x);
+		int dy1 = Math.abs(p3.y - p1.y);
+		int sign_x1 = (int) Math.signum(p1.x - p3.x);
+		int sign_y1 = (int) Math.signum(p1.y - p3.y);	// should be the same as sign_y0
+		
+		float error1 = 2 * dx1 - dy1;
+		
+		for (int i = 0; i < dy0; i++)
+		{
+			if (do_smooth)
+			{
+				RGB0 = getColor(x0, y0, p1, p2);
+				pointColor0 = new ColorType(RGB0[0], RGB0[1], RGB0[2]);
+				RGB1 = getColor(x1, y1, p1, p3);
+				pointColor1 = new ColorType(RGB1[0], RGB1[1], RGB1[2]);
+			}
+			currPoint0 = new Point2D(x0, y0, pointColor0);
+			currPoint1 = new Point2D(x1, y1, pointColor1);
+			
+			drawLine(buff, currPoint0, currPoint1);
+			
+			while (error0 >= 0)
+			{
+				x0 += sign_x0;
+				error0 = error0 - (2 * dy0);
+			}
+			y0 += sign_y0;
+			error0 = error0 + (2 * dx0);
+			
+			while (error1 >= 0)
+			{
+				x1 += sign_x1;
+				error1 = error1 - (2 * dy1);
+			}
+			y1 += sign_y1;
+			error1 = error1 + (2 * dx1);
+		}
+	}
+	
+	
+	/////////////////////////////////////////////////
+	// for texture mapping
+	/////////////////////////////////////////////////
+	public static void triangleTextureMap(BufferedImage buff, BufferedImage texture, Point2D p1, Point2D p2, Point2D p3)
+	{
+		/** UNIMPLEMENTED **/
+		drawPoint(buff, p3);
+	}
+}

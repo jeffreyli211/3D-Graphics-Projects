@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="selection" value="Model_Spider"/>
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<list key="findhistory">
+			<item value="PA2"/>
+			<item value="shadetest"/>
+			<item value=": use the normal to the triangle itself"/>
+			<item value="// front-facing triangle?"/>
+			<item value="// interpolate the normal vector of each pixel and apply light directly to it."/>
+			<item value=": Using the normal vectors at each triangle vertex,"/>
+			<item value="&#x09;// Change to if (renderer == 1) when phong shading is done"/>
+			<item value=": Calculate the normal at each triangle vertex (done within each shape class using surface equation)"/>
+			<item value="mat_torus"/>
+			<item value="mat_ellip"/>
+			<item value="mat_cyl"/>
+			<item value="ColorType tri_amb = apply_Amb_Light(amb_light, mat_ellip);"/>
+			<item value="mat_sphere"/>
+			<item value="ns="/>
+			<item value="ns "/>
+		</list>
+		<list key="replacehistory">
+			<item value="Model_Spider"/>
+			<item value=""/>
+			<item value="mat_cube"/>
+			<item value="mat_torus"/>
+			<item value="mat_cyl"/>
+			<item value="mat_ellip"/>
+			<item value="mat_ellip_1"/>
+			<item value="*********"/>
+			<item value="spot"/>
+			<item value="spot_"/>
+			<item value="z_pt"/>
+			<item value="curr_prey"/>
+			<item value="curr_pred"/>
+			<item value="delta_z"/>
+			<item value="delta_y"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1568"/>
+		<item key="DIALOG_Y_ORIGIN" value="287"/>
+		<item key="DIALOG_WIDTH" value="284"/>
+		<item key="DIALOG_HEIGHT" value="391"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-12|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+</section>
